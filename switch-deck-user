@@ -1,0 +1,23 @@
+#!/bin/bash
+
+if (( $EUID != 0 )); then
+    echo "Root access is required to change deck users"
+    exit 1
+fi
+
+user="$1"
+
+if ! [[ `id "$user" 2> /dev/null` ]]; then
+    echo "Not a valid user" 1>&2 && exit 1
+fi
+
+if [[ `echo "$user" | grep "|"` ]]; then
+    echo "Username cannot have '|'" 1>&2 && exit 1
+fi
+
+if [[ `grep "User=$user" /etc/sddm.conf.d/steamos.conf` ]]; then
+    echo "User already set" 1>&1 && exit
+fi
+
+sed -i "s|^User=.*|User=$user|" /etc/sddm.conf.d/steamos.conf
+/sbin/systemctl restart sddm
